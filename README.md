@@ -23,7 +23,8 @@ Ultra-low latency capture card viewer for Windows 11. DirectShow/Media Foundatio
 ### Prerequisites
 - Windows 10/11
 - [MSYS2](https://www.msys2.org/) with MinGW64
-- Required packages: `mingw-w64-x86_64-gcc`, `mingw-w64-x86_64-d3dcompiler`, `mingw-w64-x86_64-ffmpeg`
+- Required packages: `mingw-w64-x86_64-gcc`
+- `d3dcompiler_47.dll` (included in Windows 10/11, or copy from `C:\Windows\System32\`)
 
 ### Compile
 ```bash
