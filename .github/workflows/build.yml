@@ -1,0 +1,43 @@
+name: Build WuBuCapture
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-d3dcompiler
+    
+    - name: Build
+      shell: msys2 {0}
+      run: |
+        gcc -O2 -std=c11 -o WuBuCapture.exe WuBuCapture.c \
+          -lmfplat -lmf -lmfreadwrite -lmfuuid \
+          -ld3d11 -ldxgi -ld3dcompiler \
+          -lole32 -loleaut32 -luuid -luser32 -lgdi32 -lwinmm -ldxguid
+    
+    - name: Verify executable
+      run: |
+        ls -la WuBuCapture.exe
+        file WuBuCapture.exe
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: WuBuCapture-windows
+        path: WuBuCapture.exe

@@ -1,0 +1,15 @@
+# Build outputs
+*.exe
+*.o
+*.dll
+test_run.log
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
