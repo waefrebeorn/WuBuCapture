@@ -10,6 +10,18 @@ Ultra-low latency capture card viewer for Windows 11. DirectShow/Media Foundatio
 - **Borderless fullscreen**: Press `F` for seamless fullscreen on any monitor
 - **YUY2 native**: Zero-copy from capture card to GPU texture
 
+## Tearing vs Latency
+
+This app uses `DXGI_PRESENT_ALLOW_TEARING` for zero-latency display. On a fixed-refresh monitor without adaptive sync, you may see minor tearing during fast motion.
+
+**To eliminate tearing without adding lag:**
+
+1. **Enable FreeSync/G-Sync on your monitor** (via OSD menu)
+2. **Windows Settings** → System → Display → Graphics → "Variable refresh rate" → On
+3. **GPU control panel** → Enable G-Sync Compatible for windowed mode
+
+With adaptive sync active, tearing disappears completely while maintaining zero-lag presentation — the display refreshes exactly when each new frame arrives.
+
 ## Controls
 
 | Key | Action |

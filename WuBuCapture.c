@@ -195,7 +195,9 @@ static void RenderFrame(uint8_t *yuy2) {
     ID3D11DeviceContext_RSSetViewports(g_ctx, 1, &vp);
     ID3D11DeviceContext_Draw(g_ctx, 4, 0);
 
-    /* Tearing present = minimum latency, no vsync wait */
+    /* Present with DO_NOT_WAIT — never blocks, allows tearing for min latency.
+     * Tearing only visible during fast motion; tradeoff for zero-lag gaming.
+     * On G-Sync/FreeSync displays this is imperceptible. */
     IDXGISwapChain_Present(g_swap, 0, DXGI_PRESENT_ALLOW_TEARING);
 }
 
@@ -347,6 +349,25 @@ static void ToggleFS(void) {
     }
 }
 
+static HANDLE g_hCap = NULL;
+
+static void StopCaptureThread(void) {
+    if (g_hCap) {
+        g_running = FALSE;
+        WaitForSingleObject(g_hCap, 2000);
+        CloseHandle(g_hCap);
+        g_hCap = NULL;
+        g_running = TRUE;  /* reset for next thread */
+    }
+}
+
+static void StartCaptureThread(void) {
+    if (!g_hCap && g_reader) {
+        g_hCap = CreateThread(0, 0, CaptureThread, 0, 0, 0);
+        SetThreadPriority(g_hCap, THREAD_PRIORITY_TIME_CRITICAL);
+    }
+}
+
 static LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
     if (m == WM_DESTROY) { g_running = FALSE; PostQuitMessage(0); return 0; }
     if (m == WM_KEYDOWN) {
@@ -357,8 +378,10 @@ static LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) {
             int idx = w - '0';
             if (idx < (int)g_devCount) {
                 fprintf(stderr, "Switching to device %d...\n", idx);
+                StopCaptureThread();
                 if (g_reader) { IMFSourceReader_Release(g_reader); g_reader = NULL; }
                 InitMF(idx);
+                StartCaptureThread();
             }
         }
     }
@@ -408,8 +431,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show) {
         return 1;
     }
 
-    HANDLE hCap = CreateThread(0, 0, CaptureThread, 0, 0, 0);
-    SetThreadPriority(hCap, THREAD_PRIORITY_TIME_CRITICAL);
+    StartCaptureThread();
 
     while (g_running) {
         HANDLE evts[] = { g_frameEvent };
@@ -428,7 +450,7 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cmd, int show) {
     }
 
     g_running = FALSE;
-    WaitForSingleObject(hCap, 2000);
+    StopCaptureThread();
     if (g_reader) IMFSourceReader_Release(g_reader);
     MFShutdown();
     free(g_bufs[0]); free(g_bufs[1]); free(g_bufs[2]);
