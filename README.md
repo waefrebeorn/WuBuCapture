@@ -40,11 +40,20 @@ With adaptive sync active, tearing disappears completely while maintaining zero-
 
 ### Compile
 ```bash
-gcc -O2 -std=c11 -o WuBuCapture.exe WuBuCapture.c \
+gcc -O2 -std=c11 -Wall -Isrc -o WuBuCapture.exe \
+  src/wubu_capture_mf.c \
+  src/wubu_panel.c \
+  src/wubu_qdc.c \
+  src/wubu_rev.c \
+  src/wubu_telem.c \
+  src/wubu_stat.c \
+  src/wubu_mode.c \
   -lmfplat -lmf -lmfreadwrite -lmfuuid \
   -ld3d11 -ldxgi -ld3dcompiler \
-  -lole32 -loleaut32 -luuid -luser32 -lgdi32 -lwinmm -ldxguid
+  -lole32 -loleaut32 -luuid -luser32 -lgdi32 -lwinmm -ldxguid -lm
 ```
+
+Or simply run `build.bat` from an MSYS2 MinGW64 shell.
 
 ### Run
 ```bash
@@ -57,14 +66,34 @@ gcc -O2 -std=c11 -o WuBuCapture.exe WuBuCapture.c \
 
 ```
 Media Foundation SourceReader (capture thread)
-  ↓ YUY2 frame (zero-copy)
-  ↓ Lock-free buffer swap
+  ↓ YUY2 frame
+  ↓ Lock-free double-buffer swap
   ↓ SetEvent
+
 Main thread (MsgWaitForMultipleObjects)
-  ↓ D3D11 dynamic texture upload (CPU YUV→RGB)
+  ↓ wubu_panel: resolve monitor under window
+  ↓ wubu_qdc: read true rational refresh via QueryDisplayConfig
+  ↓ wubu_stat: measure source interval from capture timestamps
+  ↓ D3D11 UpdateSubresource upload (no Map/Unmap)
   ↓ Fullscreen quad + bilinear sampler
-  ↓ Present(0, DXGI_PRESENT_ALLOW_TEARING)
+  ↓ Present(0) — paced by measured source interval, gated on new frame
+
+Modules (src/):
+  wubu_capture_mf.c  — main loop, capture, render, present
+  wubu_panel.c       — display enumeration, window/cursor monitor selection
+  wubu_qdc.c         — exact rational refresh rate via QueryDisplayConfig
+  wubu_rev.c         — telemetry logging
+  wubu_telem.c       — CSV export
+  wubu_stat.c        — interval statistics (p50/p95/p99)
+  wubu_mode.c        — display mode helpers
 ```
+
+## Measured Performance (DISPLAY22 @ 99.982 Hz)
+
+| Mode | fps | sd | worst gap |
+|------|-----|----|-----------|
+| Windowed | 60.0 | 0.14–0.40 ms | 18.36 ms |
+| Fullscreen | 60.03 | 0.006 ms | 16.70 ms |
 
 ## License
 
