@@ -11,6 +11,7 @@ gcc -O2 -std=c11 -Wall -Isrc -o WuBuCapture.exe ^
   src/wubu_rev.c ^
   src/wubu_telem.c ^
   src/wubu_stat.c ^
+  src/wubu_mode.c ^
   -lmfplat -lmf -lmfreadwrite -lmfuuid ^
   -ld3d11 -ldxgi -ld3dcompiler ^
   -lole32 -loleaut32 -luuid -luser32 -lgdi32 -lwinmm -ldxguid -lm
